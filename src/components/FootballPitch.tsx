@@ -1,0 +1,243 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React from "react";
+import { Player, PlayerPosition } from "../types";
+import { Shield, ChevronRight, User } from "lucide-react";
+
+interface FootballPitchProps {
+  players: Player[];
+  onSelectPlayer: (player: Player) => void;
+}
+
+export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
+  // Filter for only selected players
+  const selectedPlayers = players.filter((p) => p.status === "selected");
+
+  // Group selected players by position
+  const goalkeepers = selectedPlayers.filter((p) => p.position === PlayerPosition.PORTERO);
+  const defenders = selectedPlayers.filter((p) => p.position === PlayerPosition.DEFENSA || p.position === PlayerPosition.LATERAL);
+  const midfielders = selectedPlayers.filter((p) => p.position === PlayerPosition.CENTROCAMPISTA);
+  const forwards = selectedPlayers.filter((p) => p.position === PlayerPosition.DELANTERO || p.position === PlayerPosition.EXTREMO);
+
+  // Helper to separate a line's players into Left, Center, and Right tactical lanes
+  const getLinePlayers = (zonePlayers: Player[], lineType: "forwards" | "midfielders" | "defenders") => {
+    const left: Player[] = [];
+    const center: Player[] = [];
+    const right: Player[] = [];
+
+    let sideCounter = 0;
+
+    zonePlayers.forEach((player) => {
+      if (lineType === "defenders") {
+        if (player.position === PlayerPosition.LATERAL) {
+          const lateralidadNormalized = player.lateralidad || "Derecho";
+          if (lateralidadNormalized === "Izquierdo") {
+            left.push(player);
+          } else if (lateralidadNormalized === "Derecho") {
+            right.push(player);
+          } else {
+            // Ambidiestro or other
+            if (sideCounter % 2 === 0) left.push(player);
+            else right.push(player);
+            sideCounter++;
+          }
+        } else {
+          center.push(player);
+        }
+      } else if (lineType === "forwards") {
+        if (player.position === PlayerPosition.EXTREMO) {
+          const lateralidadNormalized = player.lateralidad || "Derecho";
+          if (lateralidadNormalized === "Izquierdo") {
+            left.push(player);
+          } else if (lateralidadNormalized === "Derecho") {
+            right.push(player);
+          } else {
+            // Ambidiestro or other
+            if (sideCounter % 2 === 0) left.push(player);
+            else right.push(player);
+            sideCounter++;
+          }
+        } else {
+          center.push(player);
+        }
+      } else {
+        // Midfielders
+        center.push(player);
+      }
+    });
+
+    return { left, center, right };
+  };
+
+  const renderPlayerToken = (player: Player) => {
+    const sideText = player.lateralidad
+      ? (player.lateralidad === "Izquierdo" ? "IZQ" : player.lateralidad === "Derecho" ? "DER" : "AMB")
+      : "DER";
+
+    return (
+      <div
+        key={player.id}
+        onClick={() => onSelectPlayer(player)}
+        className="group relative flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105"
+      >
+        {/* Visual player token/shirt */}
+        <div className="w-10 h-10 rounded-full bg-red-650 bg-red-600 overflow-hidden text-white flex items-center justify-center shadow-md border-2 border-white group-hover:border-red-600 transition-all relative">
+          {player.photoUrl ? (
+            <img
+              src={player.photoUrl}
+              alt={player.name}
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <User className="w-5 h-5 text-white/90" />
+          )}
+          {player.number && (
+            <span className="absolute -top-1 -right-1 bg-white text-red-600 font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-red-200">
+              {player.number}
+            </span>
+          )}
+        </div>
+        <div className="mt-1 bg-white/95 px-1.5 py-0.5 rounded shadow text-[9px] font-bold text-slate-800 max-w-[85px] truncate text-center border border-slate-100 group-hover:border-red-300 group-hover:text-red-600 transition-colors">
+          {player.name}
+        </div>
+        <div className="text-[7.5px] font-bold text-slate-500 bg-white/95 px-1.5 rounded truncate max-w-[80px] border border-stone-100 select-none shadow-sm flex items-center gap-0.5 mt-0.5">
+          <span>{player.position}</span>
+          <span className="text-stone-300">•</span>
+          <span className="text-red-600">{sideText}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTacticalLine = (
+    title: string,
+    lineType: "forwards" | "midfielders" | "defenders",
+    zonePlayers: Player[]
+  ) => {
+    const { left, center, right } = getLinePlayers(zonePlayers, lineType);
+    const hasPlayers = zonePlayers.length > 0;
+
+    return (
+      <div className="flex flex-col items-center justify-center w-full min-h-[105px] py-1 bg-slate-950/20 rounded-xl my-0.5 border border-white/[0.02]">
+        <span className="text-[10px] uppercase tracking-wider text-red-500 font-extrabold opacity-90 mb-1.5">
+          {title} ({zonePlayers.length})
+        </span>
+        
+        {!hasPlayers ? (
+          <div className="text-[10px] text-stone-500 border border-dashed border-stone-800 rounded-lg py-1 px-3 italic bg-slate-900/30">
+            Vacío
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 w-full gap-1 px-1">
+            {/* Left Lane */}
+            <div className="flex flex-wrap justify-center items-center content-center gap-1.5">
+              {left.map((player) => renderPlayerToken(player))}
+            </div>
+
+            {/* Center Lane */}
+            <div className="flex flex-wrap justify-center items-center content-center gap-1.5 border-x border-white/[0.03] px-1">
+              {center.map((player) => renderPlayerToken(player))}
+            </div>
+
+            {/* Right Lane */}
+            <div className="flex flex-wrap justify-center items-center content-center gap-1.5">
+              {right.map((player) => renderPlayerToken(player))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderGoalkeeperZone = (
+    title: string,
+    zonePlayers: Player[]
+  ) => {
+    return (
+      <div className="flex flex-col items-center justify-center w-full min-h-[90px] py-1">
+        <span className="text-[10px] uppercase tracking-wider text-red-500 font-bold opacity-80 mb-1">
+          {title} ({zonePlayers.length})
+        </span>
+        <div className="flex flex-wrap justify-center gap-3 px-2 w-full">
+          {zonePlayers.length === 0 ? (
+            <div className="text-xs text-stone-500 border border-dashed border-stone-800 rounded-lg py-2 px-4 italic bg-slate-900/30">
+              Vacío
+            </div>
+          ) : (
+            zonePlayers.map((player) => renderPlayerToken(player))
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-red-600" />
+            Distribución Táctica Lateralizada
+          </h4>
+          <p className="text-xs text-slate-500">
+            Esquema visual donde extremos y laterales ocupan sus carriles (Izquierdo / Derecho).
+          </p>
+        </div>
+        <div className="text-right">
+          <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
+            {selectedPlayers.length} Convocados
+          </span>
+        </div>
+      </div>
+
+      {/* FOOTBALL PITCH DRAWING */}
+      <div 
+        id="football-pitch-canvas"
+        className="relative w-full aspect-[3/4] sm:aspect-[4/5] md:aspect-[3/4] bg-slate-950 rounded-xl overflow-hidden shadow-inner border-4 border-slate-300 flex flex-col justify-between py-4"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 50% 50%, transparent 60px, rgba(217, 30, 30, 0.05) 60px, rgba(217, 30, 30, 0.05) 61px, transparent 62px),
+            linear-gradient(to bottom, #0f172a 50%, #020617 50%)
+          `,
+          backgroundSize: "100% 100%, 100% 20%",
+        }}
+      >
+        {/* Background lines representing the pitch coordinates */}
+        <div className="absolute inset-0 border-2 border-white/5 pointer-events-none m-3"></div>
+        {/* Center line */}
+        <div className="absolute left-3 right-3 top-1/2 h-0.5 bg-white/5 pointer-events-none transform -translate-y-1/2"></div>
+        {/* Center circle */}
+        <div className="absolute left-1/2 top-1/2 w-24 h-24 rounded-full border-2 border-white/5 pointer-events-none transform -translate-x-1/2 -translate-y-1/2"></div>
+        
+        {/* Area Superior (Oponente) */}
+        <div className="absolute left-1/4 right-1/4 top-3 h-14 border-b-2 border-x-2 border-white/5 pointer-events-none"></div>
+        
+        {/* Area Inferior (Portero Local) */}
+        <div className="absolute left-1/4 right-1/4 bottom-3 h-14 border-t-2 border-x-2 border-white/5 pointer-events-none"></div>
+
+        {/* Pitch content zones */}
+        <div className="z-10 flex flex-col justify-between h-full px-2">
+          {/* DELANTEROS ZONE */}
+          {renderTacticalLine("Delantera (DL)", "forwards", forwards)}
+
+          {/* CENTROCAMPISTAS ZONE */}
+          {renderTacticalLine("Mediocampo (MC)", "midfielders", midfielders)}
+
+          {/* DEFENSAS ZONE */}
+          {renderTacticalLine("Defensa (DF)", "defenders", defenders)}
+
+          {/* PORTERO ZONE */}
+          {renderGoalkeeperZone("Portería (POR)", goalkeepers)}
+        </div>
+      </div>
+      
+      <div className="mt-2 text-[10px] text-slate-400 text-center italic">
+        * Selecciona un jugador en el campo para editar sus características, positivos o negativos.
+      </div>
+    </div>
+  );
+}

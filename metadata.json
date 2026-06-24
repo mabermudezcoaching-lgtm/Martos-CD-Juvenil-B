@@ -1,0 +1,6 @@
+{
+  "name": "Martos CD Juvenil B",
+  "description": "Aplicación oficial para la confección y gestión de la plantilla del Martos CD Juvenil B, evaluación de jugadores y exportación de informes en PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
