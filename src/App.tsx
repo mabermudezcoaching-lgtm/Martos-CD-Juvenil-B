@@ -36,7 +36,8 @@ import {
   Check,
   Camera,
   Eye,
-  Save
+  Save,
+  Copy
 } from "lucide-react";
 import {
   supabase,
@@ -46,7 +47,8 @@ import {
   deletePlayerInSupabase,
   syncLocalWithSupabase,
   getSettingFromSupabase,
-  saveSettingInSupabase
+  saveSettingInSupabase,
+  SUPABASE_TABLE_SQL
 } from "./lib/supabaseClient";
 
 // Helper function to compress and resize player photos for canvas/localStorage efficiency
