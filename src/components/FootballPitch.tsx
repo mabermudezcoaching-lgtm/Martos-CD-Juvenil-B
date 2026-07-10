@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { Player, PlayerPosition } from "../types";
-import { Shield, ChevronRight, User } from "lucide-react";
+import { Shield, ChevronRight, User, Download, Loader2 } from "lucide-react";
+import { toJpeg } from "html-to-image";
 
 interface FootballPitchProps {
   players: Player[];
@@ -13,6 +14,37 @@ interface FootballPitchProps {
 }
 
 export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadJPG = async () => {
+    const element = document.getElementById("football-pitch-canvas");
+    if (!element) return;
+
+    try {
+      setIsDownloading(true);
+      // Give a brief delay for UI state to update
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const dataUrl = await toJpeg(element, {
+        quality: 0.95,
+        backgroundColor: "#020617",
+        pixelRatio: 2,
+      });
+      
+      const link = document.createElement("a");
+      link.download = `distribucion-tactica-${new Date().toISOString().slice(0, 10)}.jpg`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error al descargar la imagen:", error);
+      alert("Hubo un error al generar la imagen. Por favor, inténtalo de nuevo.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   // Filter for only selected players
   const selectedPlayers = players.filter((p) => p.status === "selected");
 
@@ -177,7 +209,7 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
 
   return (
     <div className="w-full bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
             <Shield className="w-4 h-4 text-red-600" />
@@ -187,10 +219,27 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
             Esquema visual donde extremos y laterales ocupan sus carriles (Izquierdo / Derecho).
           </p>
         </div>
-        <div className="text-right">
+        <div className="flex items-center gap-2 self-start sm:self-center">
           <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
             {selectedPlayers.length} Convocados
           </span>
+          <button
+            onClick={handleDownloadJPG}
+            disabled={isDownloading}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 text-xs font-bold shadow-sm hover:shadow transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer select-none"
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Generando...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-3.5 h-3.5" />
+                <span>Descargar JPG</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
