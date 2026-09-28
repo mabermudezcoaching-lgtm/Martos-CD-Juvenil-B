@@ -4,13 +4,14 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { Player, PlayerPosition, PlayerStatus, MatchPhoto, StaffMember } from "./types";
+import { Player, PlayerPosition, PlayerStatus, MatchPhoto, StaffMember, StaffPhoto } from "./types";
 import { INITIAL_PLAYERS } from "./mockPlayers";
 import { INITIAL_STAFF } from "./mockStaff";
 import { FootballPitch } from "./components/FootballPitch";
 import { ReportTemplate } from "./components/ReportTemplate";
 import { MatchPhotosModal } from "./components/MatchPhotosModal";
 import { CoachingStaff } from "./components/CoachingStaff";
+import { persistData, loadPersistedData } from "./lib/storage";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import {
@@ -165,9 +166,33 @@ export default function App() {
     return INITIAL_STAFF;
   });
 
+  // Sync staff to persistent storage (IndexedDB + localStorage)
   useEffect(() => {
-    localStorage.setItem("mcd_coaching_staff_v1", JSON.stringify(staff));
+    persistData("mcd_coaching_staff_v1", staff);
   }, [staff]);
+
+  // Load complete state from IndexedDB on initial mount
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDataFromIndexedDB() {
+      try {
+        const idbPlayers = await loadPersistedData<Player[]>("mcd_players_v1", []);
+        if (isMounted && idbPlayers && idbPlayers.length > 0) {
+          setPlayers(idbPlayers);
+        }
+        const idbStaff = await loadPersistedData<StaffMember[]>("mcd_coaching_staff_v1", []);
+        if (isMounted && idbStaff && idbStaff.length > 0) {
+          setStaff(idbStaff);
+        }
+      } catch (err) {
+        console.error("Failed to load data from IndexedDB:", err);
+      }
+    }
+    loadDataFromIndexedDB();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   
   // Custom scout notes for report template
   const [reportNotes, setReportNotes] = useState(
@@ -205,46 +230,86 @@ export default function App() {
   const reportContainerRef = useRef<HTMLDivElement>(null);
 
   const handleUpdatePlayerMatchPhotos = (playerId: string, photos: MatchPhoto[]) => {
-    setPlayers((prev) =>
-      prev.map((p) => {
+    setPlayers((prev) => {
+      const updated = prev.map((p) => {
         if (p.id === playerId) {
-          const updated = { ...p, matchPhotos: photos };
-          if (selectedPlayer?.id === playerId) {
-            setSelectedPlayer(updated);
-          }
-          if (showPlayerPreviewModal?.id === playerId) {
-            setShowPlayerPreviewModal(updated);
-          }
-          return updated;
+          return { ...p, matchPhotos: photos };
         }
         return p;
-      })
-    );
+      });
+      persistData("mcd_players_v1", updated);
+      return updated;
+    });
+
+    if (selectedPlayer?.id === playerId) {
+      setSelectedPlayer((prev) => (prev ? { ...prev, matchPhotos: photos } : prev));
+    }
+    if (showPlayerPreviewModal?.id === playerId) {
+      setShowPlayerPreviewModal((prev) => (prev ? { ...prev, matchPhotos: photos } : prev));
+    }
+
     setAlertMessage({
       type: "success",
-      text: "Fotos de partido actualizadas correctamente.",
+      text: "Fotos de partido guardadas correctamente.",
     });
   };
 
   const handleSetPlayerProfilePhoto = (playerId: string, photoUrl: string) => {
-    setPlayers((prev) =>
-      prev.map((p) => {
+    setPlayers((prev) => {
+      const updated = prev.map((p) => {
         if (p.id === playerId) {
-          const updated = { ...p, photoUrl };
-          if (selectedPlayer?.id === playerId) {
-            setSelectedPlayer(updated);
-          }
-          if (showPlayerPreviewModal?.id === playerId) {
-            setShowPlayerPreviewModal(updated);
-          }
-          return updated;
+          return { ...p, photoUrl };
         }
         return p;
-      })
-    );
+      });
+      persistData("mcd_players_v1", updated);
+      return updated;
+    });
+
+    if (selectedPlayer?.id === playerId) {
+      setSelectedPlayer((prev) => (prev ? { ...prev, photoUrl } : prev));
+    }
+    if (showPlayerPreviewModal?.id === playerId) {
+      setShowPlayerPreviewModal((prev) => (prev ? { ...prev, photoUrl } : prev));
+    }
+
     setAlertMessage({
       type: "success",
       text: "Foto de perfil actualizada a partir de la foto de partido.",
+    });
+  };
+
+  const handleUpdateStaffPhotos = (memberId: string, photos: StaffPhoto[]) => {
+    setStaff((prev) => {
+      const updated = prev.map((m) => {
+        if (m.id === memberId) {
+          return { ...m, photos };
+        }
+        return m;
+      });
+      persistData("mcd_coaching_staff_v1", updated);
+      return updated;
+    });
+    setAlertMessage({
+      type: "success",
+      text: "Fotos del cuerpo técnico guardadas correctamente.",
+    });
+  };
+
+  const handleSetStaffProfilePhoto = (memberId: string, photoUrl: string) => {
+    setStaff((prev) => {
+      const updated = prev.map((m) => {
+        if (m.id === memberId) {
+          return { ...m, photoUrl };
+        }
+        return m;
+      });
+      persistData("mcd_coaching_staff_v1", updated);
+      return updated;
+    });
+    setAlertMessage({
+      type: "success",
+      text: "Foto de perfil del técnico actualizada correctamente.",
     });
   };
 
@@ -329,9 +394,9 @@ export default function App() {
     }
   };
 
-  // Sync to localStorage
+  // Sync players to persistent storage (IndexedDB + safe localStorage mirror)
   useEffect(() => {
-    localStorage.setItem("mcd_players_v1", JSON.stringify(players));
+    persistData("mcd_players_v1", players);
   }, [players]);
 
   // Set default initial selection
@@ -930,7 +995,7 @@ export default function App() {
   const confirmRestoreInitialSample = () => {
     setPlayers(INITIAL_PLAYERS);
     setSelectedPlayer(INITIAL_PLAYERS[0]);
-    localStorage.setItem("mcd_players_v1", JSON.stringify(INITIAL_PLAYERS));
+    persistData("mcd_players_v1", INITIAL_PLAYERS);
     setAlertMessage({ type: "success", text: "Jugadores iniciales restablecidos correctamente." });
     setShowRestoreConfirm(false);
   };
@@ -1909,6 +1974,8 @@ export default function App() {
                             : "Miembro eliminado del cuerpo técnico.",
                         });
                       }}
+                      onUpdateStaffPhotos={handleUpdateStaffPhotos}
+                      onSetStaffProfilePhoto={handleSetStaffProfilePhoto}
                     />
                   </div>
                 )}

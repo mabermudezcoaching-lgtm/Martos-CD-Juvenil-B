@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useRef } from "react";
-import { StaffMember, StaffRole } from "../types";
+import { StaffMember, StaffRole, StaffPhoto } from "../types";
+import { StaffPhotosModal } from "./StaffPhotosModal";
 import {
   Users,
   Plus,
@@ -24,7 +25,8 @@ import {
   Award,
   ClipboardCheck,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Image as ImageIcon
 } from "lucide-react";
 
 interface CoachingStaffProps {
@@ -32,6 +34,8 @@ interface CoachingStaffProps {
   onAddStaff: (member: StaffMember) => void;
   onUpdateStaff: (member: StaffMember) => void;
   onDeleteStaff: (id: string) => void;
+  onUpdateStaffPhotos?: (memberId: string, photos: StaffPhoto[]) => void;
+  onSetStaffProfilePhoto?: (memberId: string, photoUrl: string) => void;
 }
 
 // Client-side compression for staff member photos
@@ -81,6 +85,8 @@ export function CoachingStaff({
   onAddStaff,
   onUpdateStaff,
   onDeleteStaff,
+  onUpdateStaffPhotos,
+  onSetStaffProfilePhoto,
 }: CoachingStaffProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<string>("ALL");
@@ -90,6 +96,7 @@ export function CoachingStaff({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [photosModalMemberId, setPhotosModalMemberId] = useState<string | null>(null);
 
   // Form states
   const [formName, setFormName] = useState("");
@@ -354,6 +361,16 @@ export function CoachingStaff({
                     "{headCoach.responsibilities}"
                   </p>
                 )}
+                <div className="pt-2 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setPhotosModalMemberId(headCoach.id)}
+                    className="inline-flex items-center gap-1.5 text-[10px] font-bold text-red-700 hover:text-white bg-white hover:bg-red-600 px-2.5 py-1 rounded-full border border-red-200 transition cursor-pointer shadow-2xs"
+                  >
+                    <Camera className="w-3 h-3" />
+                    <span>Fotos ({headCoach.photos?.length || 0})</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="border border-dashed border-slate-300 rounded-xl p-4 text-xs text-slate-400 italic">
@@ -394,6 +411,14 @@ export function CoachingStaff({
                       {member.license}
                     </span>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setPhotosModalMemberId(member.id)}
+                    className="mt-1.5 inline-flex items-center gap-1 text-[9.5px] font-bold text-slate-700 hover:text-red-700 bg-white hover:bg-red-50 px-2 py-0.5 rounded-md border border-slate-200 transition cursor-pointer shadow-2xs"
+                  >
+                    <Camera className="w-2.5 h-2.5 text-red-500" />
+                    <span>Fotos ({member.photos?.length || 0})</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -431,6 +456,14 @@ export function CoachingStaff({
                       {member.license}
                     </span>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setPhotosModalMemberId(member.id)}
+                    className="mt-1.5 inline-flex items-center gap-1 text-[9.5px] font-bold text-slate-700 hover:text-red-700 bg-white hover:bg-red-50 px-2 py-0.5 rounded-md border border-stone-200 transition cursor-pointer shadow-2xs"
+                  >
+                    <Camera className="w-2.5 h-2.5 text-red-500" />
+                    <span>Fotos ({member.photos?.length || 0})</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -547,24 +580,36 @@ export function CoachingStaff({
                   </div>
 
                   {/* Card Actions Footer */}
-                  <div className="bg-slate-50/80 px-4 py-2.5 border-t border-slate-100 flex items-center justify-end gap-1.5">
+                  <div className="bg-slate-50/80 px-4 py-2.5 border-t border-slate-100 flex items-center justify-between gap-1.5">
                     <button
                       type="button"
-                      onClick={() => handleOpenEdit(member)}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition cursor-pointer shadow-2xs"
-                      title="Editar ficha del miembro"
+                      onClick={() => setPhotosModalMemberId(member.id)}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-red-700 hover:text-white bg-red-50 hover:bg-red-600 px-2.5 py-1 rounded-lg border border-red-200 transition cursor-pointer shadow-2xs"
+                      title="Subir y ver fotos de entrenamientos y partidos"
                     >
-                      <Edit className="w-3 h-3" />
-                      Editar
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>Fotos ({member.photos?.length || 0})</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteConfirmId(member.id)}
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-red-600 bg-white hover:bg-red-50 px-2 py-1 rounded-lg border border-slate-200 hover:border-red-200 transition cursor-pointer shadow-2xs"
-                      title="Eliminar del cuerpo técnico"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(member)}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition cursor-pointer shadow-2xs"
+                        title="Editar ficha del miembro"
+                      >
+                        <Edit className="w-3 h-3" />
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(member.id)}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-red-600 bg-white hover:bg-red-50 px-2 py-1 rounded-lg border border-slate-200 hover:border-red-200 transition cursor-pointer shadow-2xs"
+                        title="Eliminar del cuerpo técnico"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -799,6 +844,33 @@ export function CoachingStaff({
           </div>
         </div>
       )}
+
+      {/* STAFF PHOTOS MODAL */}
+      <StaffPhotosModal
+        member={staff.find((m) => m.id === photosModalMemberId) || null}
+        isOpen={photosModalMemberId !== null}
+        onClose={() => setPhotosModalMemberId(null)}
+        onUpdateStaffPhotos={(memberId, photos) => {
+          if (onUpdateStaffPhotos) {
+            onUpdateStaffPhotos(memberId, photos);
+          } else {
+            const found = staff.find((m) => m.id === memberId);
+            if (found) {
+              onUpdateStaff({ ...found, photos });
+            }
+          }
+        }}
+        onSetAsProfilePhoto={(memberId, photoUrl) => {
+          if (onSetStaffProfilePhoto) {
+            onSetStaffProfilePhoto(memberId, photoUrl);
+          } else {
+            const found = staff.find((m) => m.id === memberId);
+            if (found) {
+              onUpdateStaff({ ...found, photoUrl });
+            }
+          }
+        }}
+      />
     </div>
   );
 }

@@ -54,6 +54,14 @@ export enum StaffRole {
   OTRO = "Otro Cargo"
 }
 
+export interface StaffPhoto {
+  id: string;
+  url: string; // Base64 o URL
+  caption?: string; // Título o descripción del momento
+  date?: string; // Fecha (YYYY-MM-DD)
+  event?: string; // Ej: "Entrenamiento", "Partido", "Pizarra Táctica", "Celebración"
+}
+
 export interface StaffMember {
   id: string;
   name: string;
@@ -64,4 +72,5 @@ export interface StaffMember {
   photoUrl?: string;
   responsibilities?: string; // Tareas principales o funciones asignadas
   notes?: string;
+  photos?: StaffPhoto[]; // Fotos de entrenamientos, partidos o momentos del integrante
 }

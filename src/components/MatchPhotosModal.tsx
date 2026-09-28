@@ -31,7 +31,7 @@ interface MatchPhotosModalProps {
   onSetAsProfilePhoto?: (playerId: string, photoUrl: string) => void;
 }
 
-// Client-side image compression for match photos to prevent localStorage bloat
+// Client-side image compression for match photos to prevent storage bloat
 const compressMatchPhoto = (file: File): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -39,7 +39,7 @@ const compressMatchPhoto = (file: File): Promise<string> => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const maxDimension = 1000; // Crisp resolution for match photos
+        const maxDimension = 850; // Crisp resolution for match photos and canvas rendering
         let width = img.width;
         let height = img.height;
 
@@ -60,7 +60,7 @@ const compressMatchPhoto = (file: File): Promise<string> => {
         const ctx = canvas.getContext("2d");
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.78);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.72);
           resolve(compressedDataUrl);
         } else {
           resolve((event.target?.result as string) || "");

@@ -15,7 +15,23 @@ export const INITIAL_STAFF: StaffMember[] = [
     email: "m.a.bermudezcoaching@gmail.com",
     photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
     responsibilities: "Dirección técnica, modelo de juego, planteamiento táctico de partidos y gestión del grupo.",
-    notes: "Máxima exigencia en la presión tras pérdida y transiciones ofensivas ordenadas."
+    notes: "Máxima exigencia en la presión tras pérdida y transiciones ofensivas ordenadas.",
+    photos: [
+      {
+        id: "staff-photo-1",
+        url: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?auto=format&fit=crop&w=800&q=80",
+        caption: "Sesión táctica: ajuste de basculaciones y presión en bloque medio",
+        date: "2026-09-15",
+        event: "Entrenamiento Táctico"
+      },
+      {
+        id: "staff-photo-2",
+        url: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=800&q=80",
+        caption: "Instrucciones de pizarra en el túnel de vestuarios antes de salir al campo",
+        date: "2026-09-20",
+        event: "Charla Técnica"
+      }
+    ]
   },
   {
     id: "staff-2",
