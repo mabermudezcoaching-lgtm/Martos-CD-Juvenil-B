@@ -4,17 +4,30 @@
  */
 
 import React, { useState } from "react";
-import { Player, PlayerPosition } from "../types";
-import { Shield, ChevronRight, User, Download, Loader2 } from "lucide-react";
+import { Player, PlayerPosition, MatchPhoto } from "../types";
+import { Shield, ChevronRight, User, Download, Loader2, Camera, Sparkles } from "lucide-react";
 import { toJpeg } from "html-to-image";
+import { MatchPhotosModal } from "./MatchPhotosModal";
 
 interface FootballPitchProps {
   players: Player[];
   onSelectPlayer: (player: Player) => void;
+  onUpdatePlayerPhotos?: (playerId: string, photos: MatchPhoto[]) => void;
+  onSetAsProfilePhoto?: (playerId: string, photoUrl: string) => void;
 }
 
-export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
+export function FootballPitch({
+  players,
+  onSelectPlayer,
+  onUpdatePlayerPhotos,
+  onSetAsProfilePhoto,
+}: FootballPitchProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [matchPhotosPlayerId, setMatchPhotosPlayerId] = useState<string | null>(null);
+
+  const activeModalPlayer = matchPhotosPlayerId
+    ? players.find((p) => p.id === matchPhotosPlayerId) || null
+    : null;
 
   const handleDownloadJPG = async () => {
     const element = document.getElementById("football-pitch-canvas");
@@ -50,9 +63,13 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
 
   // Group selected players by position
   const goalkeepers = selectedPlayers.filter((p) => p.position === PlayerPosition.PORTERO);
-  const defenders = selectedPlayers.filter((p) => p.position === PlayerPosition.DEFENSA || p.position === PlayerPosition.LATERAL);
+  const defenders = selectedPlayers.filter(
+    (p) => p.position === PlayerPosition.DEFENSA || p.position === PlayerPosition.LATERAL
+  );
   const midfielders = selectedPlayers.filter((p) => p.position === PlayerPosition.CENTROCAMPISTA);
-  const forwards = selectedPlayers.filter((p) => p.position === PlayerPosition.DELANTERO || p.position === PlayerPosition.EXTREMO);
+  const forwards = selectedPlayers.filter(
+    (p) => p.position === PlayerPosition.DELANTERO || p.position === PlayerPosition.EXTREMO
+  );
 
   // Helper to separate a line's players into Left, Center, and Right tactical lanes
   const getLinePlayers = (zonePlayers: Player[], lineType: "forwards" | "midfielders" | "defenders") => {
@@ -106,8 +123,14 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
 
   const renderPlayerToken = (player: Player) => {
     const sideText = player.lateralidad
-      ? (player.lateralidad === "Izquierdo" ? "IZQ" : player.lateralidad === "Derecho" ? "DER" : "AMB")
+      ? player.lateralidad === "Izquierdo"
+        ? "IZQ"
+        : player.lateralidad === "Derecho"
+        ? "DER"
+        : "AMB"
       : "DER";
+
+    const photoCount = player.matchPhotos?.length || 0;
 
     return (
       <div
@@ -116,31 +139,77 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
         className="group relative flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105"
       >
         {/* Visual player token/shirt */}
-        <div className="w-10 h-10 rounded-full bg-red-650 bg-red-600 overflow-hidden text-white flex items-center justify-center shadow-md border-2 border-white group-hover:border-red-600 transition-all relative">
-          {player.photoUrl ? (
-            <img
-              src={player.photoUrl}
-              alt={player.name}
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <User className="w-5 h-5 text-white/90" />
-          )}
-          {player.number && (
-            <span className="absolute -top-1 -right-1 bg-white text-red-600 font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-red-200">
-              {player.number}
-            </span>
-          )}
+        <div className="relative">
+          <div className="w-10 h-10 rounded-full bg-red-600 overflow-hidden text-white flex items-center justify-center shadow-md border-2 border-white group-hover:border-red-500 transition-all relative">
+            {player.photoUrl ? (
+              <img
+                src={player.photoUrl}
+                alt={player.name}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <User className="w-5 h-5 text-white/90" />
+            )}
+            {player.number && (
+              <span className="absolute -top-1 -right-1 bg-white text-red-600 font-extrabold text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-red-200">
+                {player.number}
+              </span>
+            )}
+          </div>
+
+          {/* Dedicated Match Photos Camera Button / Badge on token */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMatchPhotosPlayerId(player.id);
+            }}
+            className={`absolute -bottom-1 -left-1.5 z-10 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer shadow-md ${
+              photoCount > 0
+                ? "bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[8.5px] px-1.5 py-0.5 border border-white gap-0.5 scale-100 ring-1 ring-amber-400/50"
+                : "bg-slate-900/90 hover:bg-red-600 text-white w-4 h-4 border border-white/80 opacity-80 group-hover:opacity-100 group-hover:scale-110"
+            }`}
+            title={
+              photoCount > 0
+                ? `Ver ${photoCount} fotos de partido de ${player.name} (haz clic para ver o subir más)`
+                : `Subir fotos de partido para ${player.name}`
+            }
+          >
+            <Camera className="w-2.5 h-2.5 shrink-0" />
+            {photoCount > 0 && <span>{photoCount}</span>}
+          </button>
         </div>
+
+        {/* Player Name */}
         <div className="mt-1 bg-white/95 px-1.5 py-0.5 rounded shadow text-[9px] font-bold text-slate-800 max-w-[85px] truncate text-center border border-slate-100 group-hover:border-red-300 group-hover:text-red-600 transition-colors">
           {player.name}
         </div>
-        <div className="text-[7.5px] font-bold text-slate-500 bg-white/95 px-1.5 rounded truncate max-w-[80px] border border-stone-100 select-none shadow-sm flex items-center gap-0.5 mt-0.5">
+
+        {/* Position + Lateralidad */}
+        <div className="text-[7.5px] font-bold text-slate-500 bg-white/95 px-1.5 rounded truncate max-w-[80px] border border-stone-100 select-none shadow-xs flex items-center gap-0.5 mt-0.5">
           <span>{player.position}</span>
           <span className="text-stone-300">•</span>
           <span className="text-red-600">{sideText}</span>
         </div>
+
+        {/* Quick Match Photos Action Pill below */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMatchPhotosPlayerId(player.id);
+          }}
+          className={`mt-0.5 text-[7px] font-extrabold px-1.5 py-0.5 rounded-full border transition-all duration-150 flex items-center gap-0.5 cursor-pointer select-none shadow-xs ${
+            photoCount > 0
+              ? "bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300"
+              : "bg-white/85 hover:bg-red-50 text-slate-600 hover:text-red-600 border-slate-200"
+          }`}
+          title="Abrir visor de fotos de partido"
+        >
+          <Camera className="w-2 h-2" />
+          <span>{photoCount > 0 ? `${photoCount} fotos` : "Subir fotos"}</span>
+        </button>
       </div>
     );
   };
@@ -158,7 +227,7 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
         <span className="text-[10px] uppercase tracking-wider text-red-500 font-extrabold opacity-90 mb-1.5">
           {title} ({zonePlayers.length})
         </span>
-        
+
         {!hasPlayers ? (
           <div className="text-[10px] text-stone-500 border border-dashed border-stone-800 rounded-lg py-1 px-3 italic bg-slate-900/30">
             Vacío
@@ -185,10 +254,7 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
     );
   };
 
-  const renderGoalkeeperZone = (
-    title: string,
-    zonePlayers: Player[]
-  ) => {
+  const renderGoalkeeperZone = (title: string, zonePlayers: Player[]) => {
     return (
       <div className="flex flex-col items-center justify-center w-full min-h-[90px] py-1">
         <span className="text-[10px] uppercase tracking-wider text-red-500 font-bold opacity-80 mb-1">
@@ -216,7 +282,7 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
             Distribución Táctica Lateralizada
           </h4>
           <p className="text-xs text-slate-500">
-            Esquema visual donde extremos y laterales ocupan sus carriles (Izquierdo / Derecho).
+            Esquema táctico interactivo. Haz clic en la cámara <span className="font-bold text-red-600">📷</span> de cada jugador para subir y visualizar sus fotos de partido.
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-center">
@@ -244,7 +310,7 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
       </div>
 
       {/* FOOTBALL PITCH DRAWING */}
-      <div 
+      <div
         id="football-pitch-canvas"
         className="relative w-full aspect-[3/4] sm:aspect-[4/5] md:aspect-[3/4] bg-slate-950 rounded-xl overflow-hidden shadow-inner border-4 border-slate-300 flex flex-col justify-between py-4"
         style={{
@@ -261,10 +327,10 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
         <div className="absolute left-3 right-3 top-1/2 h-0.5 bg-white/5 pointer-events-none transform -translate-y-1/2"></div>
         {/* Center circle */}
         <div className="absolute left-1/2 top-1/2 w-24 h-24 rounded-full border-2 border-white/5 pointer-events-none transform -translate-x-1/2 -translate-y-1/2"></div>
-        
+
         {/* Area Superior (Oponente) */}
         <div className="absolute left-1/4 right-1/4 top-3 h-14 border-b-2 border-x-2 border-white/5 pointer-events-none"></div>
-        
+
         {/* Area Inferior (Portero Local) */}
         <div className="absolute left-1/4 right-1/4 bottom-3 h-14 border-t-2 border-x-2 border-white/5 pointer-events-none"></div>
 
@@ -283,10 +349,35 @@ export function FootballPitch({ players, onSelectPlayer }: FootballPitchProps) {
           {renderGoalkeeperZone("Portería (POR)", goalkeepers)}
         </div>
       </div>
-      
-      <div className="mt-2 text-[10px] text-slate-400 text-center italic">
-        * Selecciona un jugador en el campo para editar sus características, positivos o negativos.
+
+      <div className="mt-2.5 flex items-center justify-center gap-4 text-[10px] text-slate-500 bg-white p-2 rounded-xl border border-slate-200">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block"></span>
+          Clic en jugador: Ficha completa
+        </span>
+        <span className="text-slate-300">•</span>
+        <span className="flex items-center gap-1.5">
+          <Camera className="w-3 h-3 text-amber-500 inline-block" />
+          Botón cámara: Subir y visualizar fotos de partido
+        </span>
       </div>
+
+      {/* MATCH PHOTOS MODAL (outside canvas so export stays clean) */}
+      <MatchPhotosModal
+        player={activeModalPlayer}
+        isOpen={Boolean(activeModalPlayer)}
+        onClose={() => setMatchPhotosPlayerId(null)}
+        onUpdatePlayerPhotos={(playerId, updatedPhotos) => {
+          if (onUpdatePlayerPhotos) {
+            onUpdatePlayerPhotos(playerId, updatedPhotos);
+          }
+        }}
+        onSetAsProfilePhoto={(playerId, photoUrl) => {
+          if (onSetAsProfilePhoto) {
+            onSetAsProfilePhoto(playerId, photoUrl);
+          }
+        }}
+      />
     </div>
   );
 }

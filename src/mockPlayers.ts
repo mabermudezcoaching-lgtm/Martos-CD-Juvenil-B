@@ -15,7 +15,16 @@ export const INITIAL_PLAYERS: Player[] = [
     negatives: "Debe mejorar el juego de pies bajo presión física y pulir su salida aérea en los saques de esquina.",
     status: PlayerStatus.SELECTED,
     number: "1",
-    lateralidad: "Derecho"
+    lateralidad: "Derecho",
+    matchPhotos: [
+      {
+        id: "photo-sample-1",
+        url: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
+        caption: "Estirada salvadora en el min. 86 evitando el empate",
+        matchName: "Jornada 4 vs Real Jaén",
+        date: "2026-09-14"
+      }
+    ]
   },
   {
     id: "mcd-2",
@@ -26,7 +35,16 @@ export const INITIAL_PLAYERS: Player[] = [
     negatives: "Falta de paciencia en la salida de balón jugado desde atrás. A veces arriesga demasiado en pase horizontal.",
     status: PlayerStatus.SELECTED,
     number: "4",
-    lateralidad: "Derecho"
+    lateralidad: "Derecho",
+    matchPhotos: [
+      {
+        id: "photo-sample-2",
+        url: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80",
+        caption: "Corte defensivo limpio en área propia ante el delantero rival",
+        matchName: "Jornada 2 vs CD Linares",
+        date: "2026-09-07"
+      }
+    ]
   },
   {
     id: "mcd-3",
@@ -48,7 +66,23 @@ export const INITIAL_PLAYERS: Player[] = [
     negatives: "Pierde concentración si no recibe balones limpios. Le falta asociarse más con el mediocampo.",
     status: PlayerStatus.SELECTED,
     number: "9",
-    lateralidad: "Ambidiestro"
+    lateralidad: "Ambidiestro",
+    matchPhotos: [
+      {
+        id: "photo-sample-3",
+        url: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=800&q=80",
+        caption: "Celebración del gol de volea en el min. 68",
+        matchName: "Jornada 5 vs Baeza CF",
+        date: "2026-09-21"
+      },
+      {
+        id: "photo-sample-4",
+        url: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80",
+        caption: "Remate al primer toque ajustado al poste izquierdo",
+        matchName: "Jornada 3 vs Iliturgi",
+        date: "2026-09-10"
+      }
+    ]
   },
   {
     id: "mcd-5",

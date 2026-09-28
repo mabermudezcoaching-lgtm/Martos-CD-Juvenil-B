@@ -4,10 +4,13 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { Player, PlayerPosition, PlayerStatus } from "./types";
+import { Player, PlayerPosition, PlayerStatus, MatchPhoto, StaffMember } from "./types";
 import { INITIAL_PLAYERS } from "./mockPlayers";
+import { INITIAL_STAFF } from "./mockStaff";
 import { FootballPitch } from "./components/FootballPitch";
 import { ReportTemplate } from "./components/ReportTemplate";
+import { MatchPhotosModal } from "./components/MatchPhotosModal";
+import { CoachingStaff } from "./components/CoachingStaff";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import {
@@ -37,7 +40,8 @@ import {
   Camera,
   Eye,
   Save,
-  Copy
+  Copy,
+  Users
 } from "lucide-react";
 import {
   supabase,
@@ -100,7 +104,16 @@ export default function App() {
     const saved = localStorage.getItem("mcd_players_v1");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: Player[] = JSON.parse(saved);
+        return parsed.map((p) => {
+          if (!p.matchPhotos || p.matchPhotos.length === 0) {
+            const initial = INITIAL_PLAYERS.find((ip) => ip.id === p.id);
+            if (initial?.matchPhotos) {
+              return { ...p, matchPhotos: initial.matchPhotos };
+            }
+          }
+          return p;
+        });
       } catch (e) {
         console.error("Error parsing saved players:", e);
       }
@@ -137,7 +150,24 @@ export default function App() {
   
   // Dashboard state
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [activeTab, setActiveTab] = useState<"pitch" | "lists" | "report">("pitch");
+  const [activeTab, setActiveTab] = useState<"pitch" | "lists" | "report" | "staff">("pitch");
+  
+  // Coaching Staff state
+  const [staff, setStaff] = useState<StaffMember[]>(() => {
+    const saved = localStorage.getItem("mcd_coaching_staff_v1");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing saved staff:", e);
+      }
+    }
+    return INITIAL_STAFF;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("mcd_coaching_staff_v1", JSON.stringify(staff));
+  }, [staff]);
   
   // Custom scout notes for report template
   const [reportNotes, setReportNotes] = useState(
@@ -157,6 +187,7 @@ export default function App() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [showPlayerPreviewModal, setShowPlayerPreviewModal] = useState<Player | null>(null);
+  const [matchPhotosModalPlayerId, setMatchPhotosModalPlayerId] = useState<string | null>(null);
   const [isPreviewEditing, setIsPreviewEditing] = useState(false);
   const [previewEditData, setPreviewEditData] = useState<Player | null>(null);
   const modalFileInputRef = useRef<HTMLInputElement>(null);
@@ -172,6 +203,50 @@ export default function App() {
 
   // PDF Ref to capture report
   const reportContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleUpdatePlayerMatchPhotos = (playerId: string, photos: MatchPhoto[]) => {
+    setPlayers((prev) =>
+      prev.map((p) => {
+        if (p.id === playerId) {
+          const updated = { ...p, matchPhotos: photos };
+          if (selectedPlayer?.id === playerId) {
+            setSelectedPlayer(updated);
+          }
+          if (showPlayerPreviewModal?.id === playerId) {
+            setShowPlayerPreviewModal(updated);
+          }
+          return updated;
+        }
+        return p;
+      })
+    );
+    setAlertMessage({
+      type: "success",
+      text: "Fotos de partido actualizadas correctamente.",
+    });
+  };
+
+  const handleSetPlayerProfilePhoto = (playerId: string, photoUrl: string) => {
+    setPlayers((prev) =>
+      prev.map((p) => {
+        if (p.id === playerId) {
+          const updated = { ...p, photoUrl };
+          if (selectedPlayer?.id === playerId) {
+            setSelectedPlayer(updated);
+          }
+          if (showPlayerPreviewModal?.id === playerId) {
+            setShowPlayerPreviewModal(updated);
+          }
+          return updated;
+        }
+        return p;
+      })
+    );
+    setAlertMessage({
+      type: "success",
+      text: "Foto de perfil actualizada a partir de la foto de partido.",
+    });
+  };
 
   // Supabase initial sync on mount (fully merges local items with remote items)
   useEffect(() => {
@@ -1636,6 +1711,21 @@ export default function App() {
                 </button>
 
                 <button
+                  onClick={() => setActiveTab("staff")}
+                  className={`flex-1 py-3 text-xs font-black tracking-tight text-center border-b-2 uppercase transition-all flex items-center justify-center gap-2 pointer-events-auto ${
+                    activeTab === "staff"
+                      ? "border-red-600 text-red-600 bg-white font-black"
+                      : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                  }`}
+                >
+                  <Users className="w-4 h-4 text-red-600" />
+                  <span>Cuerpo Técnico</span>
+                  <span className="text-[10px] bg-red-50 text-red-700 font-bold px-1.5 py-0.5 rounded-full border border-red-200">
+                    {staff.length}
+                  </span>
+                </button>
+
+                <button
                   onClick={() => setActiveTab("report")}
                   className={`flex-1 py-3 text-xs font-black tracking-tight text-center border-b-2 uppercase transition-all flex items-center justify-center gap-2 pointer-events-auto ${
                     activeTab === "report"
@@ -1660,6 +1750,8 @@ export default function App() {
                         setSelectedPlayer(p);
                         setShowPlayerPreviewModal(p);
                       }} 
+                      onUpdatePlayerPhotos={handleUpdatePlayerMatchPhotos}
+                      onSetAsProfilePhoto={handleSetPlayerProfilePhoto}
                     />
                   </div>
                 )}
@@ -1779,9 +1871,45 @@ export default function App() {
                           reportTitle={`${teamName} JUVENIL B`}
                           reportNotes={reportNotes}
                           teamLogo={teamLogo}
+                          staff={staff}
                         />
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* 4. CUERPO TÉCNICO VIEW */}
+                {activeTab === "staff" && (
+                  <div className="space-y-4">
+                    <CoachingStaff
+                      staff={staff}
+                      onAddStaff={(newMember) => {
+                        setStaff((prev) => [newMember, ...prev]);
+                        setAlertMessage({
+                          type: "success",
+                          text: `"${newMember.name}" añadido al cuerpo técnico.`,
+                        });
+                      }}
+                      onUpdateStaff={(updatedMember) => {
+                        setStaff((prev) =>
+                          prev.map((m) => (m.id === updatedMember.id ? updatedMember : m))
+                        );
+                        setAlertMessage({
+                          type: "success",
+                          text: `Datos de "${updatedMember.name}" actualizados correctamente.`,
+                        });
+                      }}
+                      onDeleteStaff={(id) => {
+                        const removed = staff.find((m) => m.id === id);
+                        setStaff((prev) => prev.filter((m) => m.id !== id));
+                        setAlertMessage({
+                          type: "success",
+                          text: removed
+                            ? `"${removed.name}" eliminado del cuerpo técnico.`
+                            : "Miembro eliminado del cuerpo técnico.",
+                        });
+                      }}
+                    />
                   </div>
                 )}
 
@@ -1974,6 +2102,7 @@ export default function App() {
           reportTitle={`${teamName} JUVENIL B`}
           reportNotes={reportNotes}
           teamLogo={teamLogo}
+          staff={staff}
         />
       </div>
 
@@ -2307,6 +2436,61 @@ export default function App() {
                     </p>
                   </div>
 
+                  {/* Match Photos Section in Player Modal */}
+                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Camera className="w-4 h-4 text-red-600" />
+                        <span className="text-[10px] uppercase font-black tracking-wider text-slate-800">
+                          Fotos de Partido ({showPlayerPreviewModal.matchPhotos?.length || 0})
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setMatchPhotosModalPlayerId(showPlayerPreviewModal.id)}
+                        className="text-[10px] font-bold text-red-600 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Upload className="w-3 h-3" /> Subir / Ver fotos
+                      </button>
+                    </div>
+
+                    {showPlayerPreviewModal.matchPhotos && showPlayerPreviewModal.matchPhotos.length > 0 ? (
+                      <div className="grid grid-cols-4 gap-2">
+                        {showPlayerPreviewModal.matchPhotos.slice(0, 4).map((photo, i) => (
+                          <div
+                            key={photo.id || i}
+                            onClick={() => setMatchPhotosModalPlayerId(showPlayerPreviewModal.id)}
+                            className="relative aspect-video rounded-lg overflow-hidden border border-slate-200 cursor-pointer group shadow-xs hover:border-red-400"
+                            title={photo.caption || "Ver fotos de partido"}
+                          >
+                            <img
+                              src={photo.url}
+                              alt={photo.caption || "Foto de partido"}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                            {photo.caption && (
+                              <div className="absolute inset-x-0 bottom-0 bg-black/70 backdrop-blur-xs text-white text-[8px] font-medium px-1 py-0.5 truncate">
+                                {photo.caption}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={() => setMatchPhotosModalPlayerId(showPlayerPreviewModal.id)}
+                        className="p-3 border border-dashed border-slate-300 rounded-lg text-center cursor-pointer hover:bg-white hover:border-red-300 transition"
+                      >
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          No hay fotos de partido para este jugador todavía.
+                        </p>
+                        <span className="text-[10px] font-bold text-red-600">
+                          + Haz clic aquí para subir fotos de partido
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
 
               </div>
@@ -2425,6 +2609,15 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* GLOBAL MATCH PHOTOS MODAL */}
+      <MatchPhotosModal
+        player={matchPhotosModalPlayerId ? players.find((p) => p.id === matchPhotosModalPlayerId) || null : null}
+        isOpen={Boolean(matchPhotosModalPlayerId)}
+        onClose={() => setMatchPhotosModalPlayerId(null)}
+        onUpdatePlayerPhotos={handleUpdatePlayerMatchPhotos}
+        onSetAsProfilePhoto={handleSetPlayerProfilePhoto}
+      />
 
     </div>
   );

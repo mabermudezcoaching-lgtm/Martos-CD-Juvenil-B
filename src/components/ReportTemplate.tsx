@@ -4,18 +4,19 @@
  */
 
 import React from "react";
-import { Player, PlayerPosition, PlayerStatus } from "../types";
-import { Shield, Sparkles, AlertCircle, FileText, CheckCircle2, XCircle } from "lucide-react";
+import { Player, PlayerPosition, PlayerStatus, StaffMember } from "../types";
+import { Shield, Sparkles, AlertCircle, FileText, CheckCircle2, XCircle, Users } from "lucide-react";
 
 interface ReportTemplateProps {
   players: Player[];
   reportTitle: string;
   reportNotes: string;
   teamLogo?: string;
+  staff?: StaffMember[];
 }
 
 export const ReportTemplate = React.forwardRef<HTMLDivElement, ReportTemplateProps>(
-  ({ players, reportTitle, reportNotes, teamLogo }, ref) => {
+  ({ players, reportTitle, reportNotes, teamLogo, staff }, ref) => {
     const selectedPlayers = players.filter((p) => p.status === PlayerStatus.SELECTED);
     const discardedPlayers = players.filter((p) => p.status === PlayerStatus.DISCARDED);
     const pendingPlayers = players.filter((p) => p.status === PlayerStatus.PENDING);
@@ -417,6 +418,35 @@ export const ReportTemplate = React.forwardRef<HTMLDivElement, ReportTemplatePro
                       <div className="border-b border-dotted border-amber-400 h-3"></div>
                     </div>
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* CUERPO TÉCNICO SECTION */}
+        {staff && staff.length > 0 && (
+          <div className="mb-6 [page-break-inside:avoid] break-inside-avoid">
+            <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-1.5 mb-3 border-b-2 pb-1 border-slate-200">
+              👥 CUERPO TÉCNICO & STAFF ({staff.length})
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+              {staff.map((member) => (
+                <div key={member.id} className="p-2.5 border border-slate-200 rounded-lg bg-slate-50/50">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="block font-bold text-xs text-slate-900">{member.name}</span>
+                      <span className="text-[9px] font-bold text-red-700 uppercase tracking-wider block">{member.role}</span>
+                      {member.license && (
+                        <span className="text-[8.5px] text-slate-500 font-medium block">{member.license}</span>
+                      )}
+                    </div>
+                  </div>
+                  {member.responsibilities && (
+                    <p className="text-[8.5px] text-slate-600 mt-1 italic line-clamp-2">
+                      {member.responsibilities}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
