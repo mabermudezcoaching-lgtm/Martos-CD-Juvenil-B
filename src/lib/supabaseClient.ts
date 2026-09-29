@@ -218,32 +218,35 @@ export async function deletePlayerInSupabase(playerId: string): Promise<void> {
 
 /**
  * Perform a full bilateral sync:
- * Sends local players that are missing or newer to Supabase,
- * and fetches missing ones from Supabase, returning a merged list.
+ * If Supabase already has data, remote is the single source of truth (does not resurrect deleted players).
+ * Automatically purges any unintended lingering mock players (Chema, Mario Bermúdez, Carlos Chamorro).
  */
 export async function syncLocalWithSupabase(localPlayers: Player[]): Promise<Player[]> {
   if (!supabase) return localPlayers;
 
+  const deletedNames = ["chema", "mario bermúdez", "mario bermudez", "carlos chamorro"];
+  const isDeleted = (p: Player) => deletedNames.some((d) => p.name.toLowerCase().includes(d));
+
   // 1. Fetch remote data
   const remotePlayers = await fetchPlayersFromSupabase();
-  const remoteMap = new Map(remotePlayers.map((p) => [p.id, p]));
-  const localMap = new Map(localPlayers.map((p) => [p.id, p]));
 
-  // 2. Upload players present locally but missing in Supabase
-  const uploadPromises: Promise<any>[] = [];
-  localPlayers.forEach((p) => {
-    if (!remoteMap.has(p.id)) {
-      uploadPromises.push(upsertPlayerInSupabase(p));
+  // If remote has data: purge lingering deleted players if any exist, and return remote list
+  if (remotePlayers.length > 0) {
+    const lingering = remotePlayers.filter(isDeleted);
+    if (lingering.length > 0) {
+      await Promise.all(lingering.map((p) => deletePlayerInSupabase(p.id)));
+      return remotePlayers.filter((p) => !isDeleted(p));
     }
-  });
-
-  if (uploadPromises.length > 0) {
-    await Promise.all(uploadPromises);
+    return remotePlayers;
   }
 
-  // 3. Re-fetch current remote state to ensure we get the fully merged list
-  const fullySyncedRemote = await fetchPlayersFromSupabase();
-  return fullySyncedRemote;
+  // 2. If remote is completely empty, only seed with valid non-deleted local players
+  const validLocal = localPlayers.filter((p) => !isDeleted(p));
+  if (validLocal.length > 0) {
+    await Promise.all(validLocal.map((p) => upsertPlayerInSupabase(p)));
+  }
+
+  return await fetchPlayersFromSupabase();
 }
 
 /**

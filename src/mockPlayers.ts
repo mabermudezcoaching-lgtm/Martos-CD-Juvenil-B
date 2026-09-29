@@ -27,64 +27,6 @@ export const INITIAL_PLAYERS: Player[] = [
     ]
   },
   {
-    id: "mcd-2",
-    name: "Carlos Chamorro",
-    position: PlayerPosition.DEFENSA,
-    age: 16,
-    positives: "Central rapidísimo al corte con físico imponente, letal en juego áereo ofensivo. Muy limpio en las entradas.",
-    negatives: "Falta de paciencia en la salida de balón jugado desde atrás. A veces arriesga demasiado en pase horizontal.",
-    status: PlayerStatus.SELECTED,
-    number: "4",
-    lateralidad: "Derecho",
-    matchPhotos: [
-      {
-        id: "photo-sample-2",
-        url: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80",
-        caption: "Corte defensivo limpio en área propia ante el delantero rival",
-        matchName: "Jornada 2 vs CD Linares",
-        date: "2026-09-07"
-      }
-    ]
-  },
-  {
-    id: "mcd-3",
-    name: "Mario Bermúdez",
-    position: PlayerPosition.CENTROCAMPISTA,
-    age: 17,
-    positives: "Visión de juego privilegiada de tres cuartos en adelante. Gran capacidad para filtrar pases entre líneas y excelente balón parado.",
-    negatives: "Suele tener lagunas de repliegue defensivo e intensidad en la presión alta. Necesita ganar músculo.",
-    status: PlayerStatus.SELECTED,
-    number: "8",
-    lateralidad: "Derecho"
-  },
-  {
-    id: "mcd-4",
-    name: "José Manuel 'Chema'",
-    position: PlayerPosition.DELANTERO,
-    age: 17,
-    positives: "Olfato goleador insaciable. Desmarques de ruptura constantes, excelente disparo raso cruzado con ambas piernas.",
-    negatives: "Pierde concentración si no recibe balones limpios. Le falta asociarse más con el mediocampo.",
-    status: PlayerStatus.SELECTED,
-    number: "9",
-    lateralidad: "Ambidiestro",
-    matchPhotos: [
-      {
-        id: "photo-sample-3",
-        url: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=800&q=80",
-        caption: "Celebración del gol de volea en el min. 68",
-        matchName: "Jornada 5 vs Baeza CF",
-        date: "2026-09-21"
-      },
-      {
-        id: "photo-sample-4",
-        url: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80",
-        caption: "Remate al primer toque ajustado al poste izquierdo",
-        matchName: "Jornada 3 vs Iliturgi",
-        date: "2026-09-10"
-      }
-    ]
-  },
-  {
     id: "mcd-5",
     name: "Hugo Extremera",
     position: PlayerPosition.LATERAL,

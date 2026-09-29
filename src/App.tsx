@@ -102,6 +102,20 @@ const compressImage = (file: File, callback: (base64: string) => void) => {
   reader.readAsDataURL(file);
 };
 
+// Helper to exclude deleted mock players (Chema, Mario Bermúdez, Carlos Chamorro)
+const isExcludedPlayer = (p: Player) => {
+  const n = p.name.toLowerCase();
+  return (
+    n.includes("chema") ||
+    n.includes("mario bermúdez") ||
+    n.includes("mario bermudez") ||
+    n.includes("carlos chamorro") ||
+    p.id === "mcd-2" ||
+    p.id === "mcd-3" ||
+    p.id === "mcd-4"
+  );
+};
+
 export default function App() {
   // Sync state with localStorage or fall back to mock seed data
   const [players, setPlayers] = useState<Player[]>(() => {
@@ -109,20 +123,24 @@ export default function App() {
     if (saved) {
       try {
         const parsed: Player[] = JSON.parse(saved);
-        return parsed.map((p) => {
-          if (!p.matchPhotos || p.matchPhotos.length === 0) {
-            const initial = INITIAL_PLAYERS.find((ip) => ip.id === p.id);
-            if (initial?.matchPhotos) {
-              return { ...p, matchPhotos: initial.matchPhotos };
+        const cleaned = parsed
+          .filter((p) => !isExcludedPlayer(p))
+          .map((p) => {
+            if (!p.matchPhotos || p.matchPhotos.length === 0) {
+              const initial = INITIAL_PLAYERS.find((ip) => ip.id === p.id);
+              if (initial?.matchPhotos) {
+                return { ...p, matchPhotos: initial.matchPhotos };
+              }
             }
-          }
-          return p;
-        });
+            return p;
+          });
+        localStorage.setItem("mcd_players_v1", JSON.stringify(cleaned));
+        return cleaned;
       } catch (e) {
         console.error("Error parsing saved players:", e);
       }
     }
-    return INITIAL_PLAYERS;
+    return INITIAL_PLAYERS.filter((p) => !isExcludedPlayer(p));
   });
 
   // Active form values
@@ -182,7 +200,9 @@ export default function App() {
       try {
         const idbPlayers = await loadPersistedData<Player[]>("mcd_players_v1", []);
         if (isMounted && idbPlayers && idbPlayers.length > 0) {
-          setPlayers(idbPlayers);
+          const cleanedIdb = idbPlayers.filter((p) => !isExcludedPlayer(p));
+          setPlayers(cleanedIdb);
+          persistData("mcd_players_v1", cleanedIdb);
         }
         const idbStaff = await loadPersistedData<StaffMember[]>("mcd_coaching_staff_v1", []);
         if (isMounted && idbStaff && idbStaff.length > 0) {
