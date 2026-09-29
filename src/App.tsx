@@ -1629,56 +1629,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* QUICK SELECTION BAR FOR PITCH VIEW */}
-            {selectedPlayer && activeTab === "pitch" && (
-              <div className="bg-white p-3.5 px-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 animate-fade-in">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
-                    {selectedPlayer.photoUrl ? (
-                      <img src={selectedPlayer.photoUrl} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center font-black text-red-600 text-xs">
-                        {selectedPlayer.name.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-slate-900 truncate">{selectedPlayer.name}</span>
-                      {selectedPlayer.number && (
-                        <span className="text-[9px] bg-slate-100 font-bold px-1 rounded text-slate-600">
-                          #{selectedPlayer.number}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-slate-500 font-medium uppercase">
-                      {selectedPlayer.position} • {selectedPlayer.age} años • {selectedPlayer.lateralidad || "Derecho"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setShowPlayerPreviewModal(selectedPlayer)}
-                    className="text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Previa</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setInitialCoachingTab("scouting");
-                      setActiveTab("staff");
-                    }}
-                    className="text-[11px] font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-xl transition shadow-xs cursor-pointer flex items-center gap-1"
-                  >
-                    <ClipboardCheck className="w-3.5 h-3.5" />
-                    <span>Ver Ficha de Scouting en Cuerpo Técnico →</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
           </div>
 
         </div>
